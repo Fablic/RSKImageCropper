@@ -95,6 +95,19 @@ typedef NS_ENUM(NSUInteger, RSKImageCropMode) {
  */
 @property (assign, nonatomic) CGSize cropSize;
 
+/**
+ Support RSKImageCropModeSquare or RSKImageCropModeCustom.
+ */
+@property (assign, nonatomic) BOOL frameBarderMode;
+
+/**
+ Custom control name.
+ */
+@property (assign, nonatomic) NSString *moveAndScaleLabelText;
+@property (assign, nonatomic) NSString *cancelButtonTitle;
+@property (assign, nonatomic) NSString *chooseButtonTitle;
+@property (assign, nonatomic) UIColor *maskLayerColor;
+
 @end
 
 /**

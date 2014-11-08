@@ -45,6 +45,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
 @property (assign, nonatomic) BOOL originalStatusBarHidden;
 
 @property (strong, nonatomic) RSKImageScrollView *imageScrollView;
+@property (strong, nonatomic) UIView *frameBorderView;
 @property (strong, nonatomic) RSKTouchView *overlayView;
 @property (strong, nonatomic) CAShapeLayer *maskLayer;
 @property (strong, nonatomic) UILabel *moveAndScaleLabel;
@@ -70,6 +71,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
     if (self) {
         _originalImage = originalImage;
         _cropMode = RSKImageCropModeCircle;
+        _frameBarderMode = NO;
     }
     return self;
 }
@@ -80,6 +82,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
     if (self) {
         _originalImage = originalImage;
         _cropMode = cropMode;
+        _frameBarderMode = NO;
     }
     return self;
 }
@@ -91,6 +94,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
         _originalImage = originalImage;
         _cropMode = cropMode;
         _cropSize = cropSize;
+        _frameBarderMode = NO;
     }
     return self;
 }
@@ -118,7 +122,11 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
     [self.view addSubview:self.moveAndScaleLabel];
     [self.view addSubview:self.cancelButton];
     [self.view addSubview:self.chooseButton];
-    
+
+    if (self.frameBarderMode && self.cropMode != RSKImageCropModeCircle) {
+        [self.overlayView addSubview:self.frameBorderView];
+    }
+
     [self.view addGestureRecognizer:self.doubleTapGestureRecognizer];
 }
 
@@ -144,6 +152,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
     [super viewWillLayoutSubviews];
     
     [self layoutImageScrollView];
+    [self layoutFrameBorderView];
     [self layoutOverlayView];
     [self updateMaskPath];
     [self.view setNeedsUpdateConstraints];
@@ -245,12 +254,23 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
     return _overlayView;
 }
 
+- (UIView *)frameBorderView
+{
+    if (!_frameBorderView) {
+        _frameBorderView = [[UIView alloc] init];
+        _frameBorderView.layer.borderColor = [UIColor grayColor].CGColor;
+        _frameBorderView.layer.borderWidth = 1.f;
+    }
+
+    return _frameBorderView;
+}
+
 - (CAShapeLayer *)maskLayer
 {
     if (!_maskLayer) {
         _maskLayer = [CAShapeLayer layer];
         _maskLayer.fillRule = kCAFillRuleEvenOdd;
-        _maskLayer.fillColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.7].CGColor;
+        _maskLayer.fillColor = _maskLayerColor ? _maskLayerColor.CGColor : [UIColor colorWithRed:0 green:0 blue:0 alpha:0.7].CGColor;
     }
     return _maskLayer;
 }
@@ -261,7 +281,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
         _moveAndScaleLabel = [[UILabel alloc] init];
         _moveAndScaleLabel.translatesAutoresizingMaskIntoConstraints = NO;
         _moveAndScaleLabel.backgroundColor = [UIColor clearColor];
-        _moveAndScaleLabel.text = @"Move and Scale";
+        _moveAndScaleLabel.text = self.moveAndScaleLabelText ?: @"Move and Scale";
         _moveAndScaleLabel.textColor = [UIColor whiteColor];
         _moveAndScaleLabel.opaque = NO;
     }
@@ -273,7 +293,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
     if (!_cancelButton) {
         _cancelButton = [[UIButton alloc] init];
         _cancelButton.translatesAutoresizingMaskIntoConstraints = NO;
-        [_cancelButton setTitle:@"Cancel" forState:UIControlStateNormal];
+        [_cancelButton setTitle:self.cancelButtonTitle ?: @"Cancel" forState:UIControlStateNormal];
         [_cancelButton addTarget:self action:@selector(onCancelButtonTouch:) forControlEvents:UIControlEventTouchUpInside];
         _cancelButton.opaque = NO;
     }
@@ -285,7 +305,7 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
     if (!_chooseButton) {
         _chooseButton = [[UIButton alloc] init];
         _chooseButton.translatesAutoresizingMaskIntoConstraints = NO;
-        [_chooseButton setTitle:@"Choose" forState:UIControlStateNormal];
+        [_chooseButton setTitle:self.chooseButtonTitle ?: @"Choose" forState:UIControlStateNormal];
         [_chooseButton addTarget:self action:@selector(onChooseButtonTouch:) forControlEvents:UIControlEventTouchUpInside];
         _chooseButton.opaque = NO;
     }
@@ -399,6 +419,12 @@ static const CGFloat kLandscapeCancelAndChooseButtonsVerticalMargin = 12.0f;
 - (void)layoutImageScrollView
 {
     self.imageScrollView.frame = [self maskRect];
+
+}
+
+- (void)layoutFrameBorderView
+{
+    self.frameBorderView.frame = [self maskRect];
 }
 
 - (void)layoutOverlayView
